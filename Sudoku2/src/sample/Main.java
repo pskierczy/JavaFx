@@ -2,7 +2,10 @@ package sample;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
+import javafx.concurrent.WorkerStateEvent;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Group;
@@ -13,6 +16,8 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
+import javafx.util.Pair;
+import javafx.util.StringConverter;
 
 
 public class Main extends Application
@@ -35,19 +40,28 @@ public class Main extends Application
     private Button butSolve;
     private Button butValidateSolution;
     private Button butReset;
-    private ComboBox<String> cbxDifficulty;
+    private ComboBox<Pair<Integer, String>> cbxDifficulty;
     private Label lblMain;
     private Label lblDifficulty;
     private int selectedGridID;
     private int controlsCount;
     private Group root;
 
+    private ObservableList<Pair<Integer, String>> listDifficulties;
     //To implement
     //private VBox menuContainer;
 
 
-    public static void main(String[] args) {
-        launch(args);
+    public static void main(String[] args)
+            throws Exception {
+        try {
+            launch(args);
+        } catch (Exception e) {
+            Exception ex = new Exception();
+            ex.addSuppressed(e);
+            throw ex;
+        }
+
     }
 
     @Override
@@ -57,7 +71,7 @@ public class Main extends Application
 
         root.setFocusTraversable(true);
         root.requestFocus();
-        root.setOnMouseMoved(this);
+        //root.setOnMouseMoved(this);
         root.setOnMouseClicked(this);
     }
 
@@ -69,7 +83,7 @@ public class Main extends Application
 
         //init main variables
         initMenus();
-        controlsCount=0;
+        controlsCount = 0;
         initScene(root);
         initGame(root);
         initHandlers();
@@ -77,8 +91,14 @@ public class Main extends Application
     }
 
     private void initScene(Group root) {
-        int y0 = 10;
-        //int dy = 20;
+        listDifficulties = FXCollections.observableArrayList();
+        listDifficulties.addAll(
+                new Pair<>(50, "Easy (50 clues)"),
+                new Pair<>(40, "Medium (40 clues)"),
+                new Pair<>(30, "Hard (30 clues)"),
+                new Pair<>(20, "Extreme (20 clues)")
+        );
+
 
         background = new Rectangle(WIDTH, HEIGHT);
         background.setFill(Color.WHITE);
@@ -103,7 +123,20 @@ public class Main extends Application
         root.getChildren().add(lblDifficulty);
 
         cbxDifficulty = new ComboBox<>();
-        cbxDifficulty.getItems().addAll("Easy (40 clues)", "Medium (30 clues)", "Hard (20 clues)");
+        cbxDifficulty.getItems().addAll(listDifficulties);
+
+        cbxDifficulty.setConverter(new StringConverter<Pair<Integer, String>>() {
+            @Override
+            public String toString(Pair<Integer, String> object) {
+                return object.getValue();
+            }
+
+            @Override
+            public Pair<Integer, String> fromString(String string) {
+                return null;
+            }
+        });
+
         cbxDifficulty.getSelectionModel().select(0);
         cbxDifficulty.setLayoutX(10);
         cbxDifficulty.setLayoutY(60);
@@ -134,15 +167,7 @@ public class Main extends Application
         chbShowAnimation.setLayoutY(240);
         root.getChildren().add(chbShowAnimation);
 
-        controlsCount=root.getChildren().size();
-
-        lblMain = new Label();
-        lblMain.setLayoutX(WIDTH * 2 / 3);
-        lblMain.setLayoutY(10);
-        lblMain.setText("Mouse position: 000.00; 000.00");
-        root.getChildren().add(lblMain);
-
-
+        controlsCount = root.getChildren().size();
     }
 
     private void initMenus() {
@@ -200,6 +225,7 @@ public class Main extends Application
             }
         });
 
+        //TODO:Improve on this method, without throwing exceptions
         butValidateSolution.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
@@ -227,16 +253,28 @@ public class Main extends Application
                     @Override
                     protected Void call() throws Exception {
                         try {
-                            DisableControls();
                             GameEngine.Solve(chbShowAnimation.isSelected());
-                            GameEngine.Update();
-                            EnableControls();
-                            butValidateSolution.fire();
+
+                            //GameEngine.Update();
+                            //EnableControls();
+                            //butValidateSolution.fire();
                         } catch (Exception ex) {
+                            Exception ee = new Exception();
+                            ee.addSuppressed(ex);
+                            throw ee;
                         }
                         return null;
                     }
                 };
+                taskSolveInBackground.setOnSucceeded((WorkerStateEvent) ->
+                        {
+                            GameEngine.Update();
+                            EnableControls();
+                            butValidateSolution.fire();
+                        }
+
+                );
+                DisableControls();
                 new Thread(taskSolveInBackground).start();
             }
 
@@ -252,23 +290,17 @@ public class Main extends Application
         butGenerate.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-                Alert message = new Alert(Alert.AlertType.INFORMATION);
-                message.setContentText("Not implemented yet");
-                message.show();
+                GameEngine.Generate(cbxDifficulty.getValue().getKey(), System.nanoTime());
+                GameEngine.Update();
             }
         });
     }
 
     private void MouseEventHandler(MouseEvent mouseEvent, Object sender) {
-        lblMain.setText("sender=" + sender.getClass().getName());
         if (mouseEvent.getEventType() == MouseEvent.MOUSE_CLICKED) {
             contextMenu.hide();
         }
 
-        if (sender instanceof SudokuGraphics.GridField && mouseEvent.getEventType() == MouseEvent.MOUSE_MOVED) {
-            selectedGridID = Integer.valueOf(((SudokuGraphics.GridField) mouseEvent.getSource()).getId());
-            lblMain.setText(lblMain.getText() + "\nMouse position:" + mouseEvent.getSceneX() + ";" + mouseEvent.getSceneX() + "\nGrid ID=" + selectedGridID);
-        }
 
         if (mouseEvent.getEventType() == MouseEvent.MOUSE_CLICKED && mouseEvent.getButton() == MouseButton.SECONDARY && sender instanceof SudokuGraphics.GridField) {
             contextMenu.show(background, mouseEvent.getScreenX(), mouseEvent.getSceneY());
@@ -281,15 +313,14 @@ public class Main extends Application
         MouseEventHandler(mouseEvent, mouseEvent.getSource());
     }
 
-    private void DisableControls()
-    {
-        for (int i=1;i<controlsCount;i++)
+    private void DisableControls() {
+        for (int i = 1; i < controlsCount; i++)
             root.getChildren().get(i).setDisable(true);
+
     }
 
-    private void EnableControls()
-    {
-        for (int i=1;i<controlsCount;i++)
+    private void EnableControls() {
+        for (int i = 1; i < controlsCount; i++)
             root.getChildren().get(i).setDisable(false);
     }
 

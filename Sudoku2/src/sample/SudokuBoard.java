@@ -94,6 +94,19 @@ public class SudokuBoard {
             }
     }
 
+    static public SudokuBoard InitWithZero() {
+        return InitWithZero(9);
+    }
+
+    static public SudokuBoard InitWithZero(int size) {
+        int[][] zeros = new int[size][size];
+        for (int i = 0; i < size; i++)
+            for (int j = 0; j < size; j++)
+                zeros[i][j] = 0;
+
+        return new SudokuBoard(zeros);
+    }
+
     static public SudokuBoard TestCase() {
         final int[][] testCase = {
                 {0, 1, 0, 2, 0, 0, 0, 9, 4},
@@ -145,5 +158,14 @@ public class SudokuBoard {
             for (int j = 0; j < 9; j++)
                 if (!board[i][j].isClue())
                     board[i][j].value = 0;
+    }
+
+    public int[][] asList() {
+        int retVal[][] = new int[9][9];
+        for (int i = 0; i < 9; i++)
+            for (int j = 0; j < 9; j++)
+                retVal[i][j] = this.getValueAt(i, j);
+
+        return retVal;
     }
 }
