@@ -6,6 +6,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 
 import java.beans.ExceptionListener;
+import java.io.Console;
 import java.util.*;
 
 public class SudokuEngine {
@@ -13,6 +14,8 @@ public class SudokuEngine {
     private SudokuGraphics Graphics;
     private boolean showPossibleNumbers;
     private boolean showInvalidFields;
+
+    private boolean isDebug = false;
 
     public SudokuEngine(SudokuBoard board, SudokuGraphics graphics) {
         this.Board = board;
@@ -23,12 +26,17 @@ public class SudokuEngine {
 
     }
 
+    private void setDebug(boolean debug) {
+        isDebug = debug;
+    }
+
     public void setShowPossibleNumbers(boolean showPossibleNumbers) {
         this.showPossibleNumbers = showPossibleNumbers;
     }
 
     public void setShowInvalidFields(boolean showInvalidFields) {
         this.showInvalidFields = showInvalidFields;
+        setDebug(showInvalidFields);
     }
 
     public SudokuBoard getBoard() {
@@ -77,9 +85,8 @@ public class SudokuEngine {
     }
 
     public void Update(int row, int column, int mainNumber) throws Exception {
-        Validate(row, column, mainNumber);
+        //Validate(row, column, mainNumber);
         Board.setValueAt(row, column, mainNumber);
-
 
         Update();
     }
@@ -99,6 +106,7 @@ public class SudokuEngine {
     }
 
     public void ValidateFields() {
+        System.out.println("VALIDATE FIELDS START");
         boolean isFieldValid;
         for (int i = 0; i < 9; i++)
             for (int j = 0; j < 9; j++) {
@@ -112,6 +120,7 @@ public class SudokuEngine {
                         this.getGraphics().setNumberColor(i, j, Color.BLACK);
                 }
             }
+        System.out.println("VALIDATE FIELDS END");
     }
 
 
@@ -148,7 +157,6 @@ public class SudokuEngine {
             return false;
         if (!ValidateSquare(row, column, value))
             return false;
-
         return true;
     }
 
@@ -180,11 +188,12 @@ public class SudokuEngine {
     private boolean ValidateSquare(int row, int column, int value) {
         int SquareRow = row / 3;
         int SquareColumn = column / 3;
-        for (int i = SquareRow * 3; i < 3; i++)
-            for (int j = SquareColumn * 3; j < 3; j++) {
-                if (i == row && j == column)
+        //System.out.print("SQUARE (" + SquareRow + "," + SquareColumn + ")");
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++) {
+                if (row == (i + SquareRow * 3) && column == (j + SquareColumn * 3))
                     continue;
-                if (Board.getValueAt(i, j) == value)
+                if (Board.getValueAt(SquareRow * 3 + i, SquareColumn * 3 + j) == value)
                     return false;
             }
         return true;

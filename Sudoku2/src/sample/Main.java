@@ -181,6 +181,7 @@ public class Main extends Application
                 public void handle(ActionEvent event) {
                     try {
                         int selectedNumber = (int) ((MenuItem) event.getTarget()).getUserData();
+                        //selectedGridID=(int)((SudokuGraphics.GridField)event.getSource()).getUserData();
                         GameEngine.Update(selectedGridID / 9, selectedGridID % 9, selectedNumber);
                     } catch (Exception ex) {
                         Alert messageBox = new Alert(Alert.AlertType.ERROR);
@@ -221,6 +222,7 @@ public class Main extends Application
             @Override
             public void handle(ActionEvent event) {
                 GameEngine.setShowInvalidFields(chbShowInvalidFields.isSelected());
+                //GameEngine.setDebug(true);
                 GameEngine.Update();
             }
         });
@@ -301,8 +303,8 @@ public class Main extends Application
             contextMenu.hide();
         }
 
-
         if (mouseEvent.getEventType() == MouseEvent.MOUSE_CLICKED && mouseEvent.getButton() == MouseButton.SECONDARY && sender instanceof SudokuGraphics.GridField) {
+            selectedGridID = Integer.valueOf(((SudokuGraphics.GridField) mouseEvent.getSource()).getId());
             contextMenu.show(background, mouseEvent.getScreenX(), mouseEvent.getSceneY());
         }
         mouseEvent.consume();
